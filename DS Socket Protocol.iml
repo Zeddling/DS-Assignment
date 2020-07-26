@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" exported="" name="lib" level="project" />
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="file://$USER_HOME$/ForCode/jar/slf4j" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file://$USER_HOME$/ForCode/jar/slf4j" />
+        </SOURCES>
+        <jarDirectory url="file://$USER_HOME$/ForCode/jar/slf4j" recursive="false" />
+        <jarDirectory url="file://$USER_HOME$/ForCode/jar/slf4j" recursive="false" type="SOURCES" />
+      </library>
+    </orderEntry>
+    <orderEntry type="library" exported="" name="slf4j" level="project" />
+    <orderEntry type="library" exported="" name="Lombok" level="project" />
+    <orderEntry type="library" exported="" name="commons-logging-1.2" level="project" />
+    <orderEntry type="library" name="com.h2database:h2:1.4.200" level="project" />
+  </component>
+</module>
