@@ -1,21 +1,24 @@
 package com.server.ssl;
 
-import com.dao.ToyInfo;
-import com.dao.h2.H2JDBCUtils;
 import com.dao.h2.ToyDatabase;
+import com.rmi.ServerRMI;
+import com.rmi.ServerRMIHandler;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.*;
 import java.io.*;
-import java.net.Socket;
+import java.rmi.AlreadyBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.sql.SQLException;
 import java.util.List;
 
-public class SSLServer extends Thread {
+public class SSLServerThread extends Thread {
 
     private static int port = 8010;               //  Listening port
     private KeyStore clientKeyStore;                    //  KeyStore for storing the client's public key
@@ -23,10 +26,10 @@ public class SSLServer extends Thread {
     private SSLContext sslContext;                      //  Used to generate a SocketFactory
     static private final String passphrase = "123456";  // Passphrase for accessing keystore
     private static SecureRandom secureRandom;           //  A source of secure random numbers
-    private static final Logger log = LoggerFactory.getLogger(SSLServer.class);
+    private static final Logger log = LoggerFactory.getLogger(SSLServerThread.class);
 
     //  Constructor
-    public SSLServer(SecureRandom secureRandom) {
+    public SSLServerThread(SecureRandom secureRandom) {
         this.secureRandom = secureRandom;
     }
 
@@ -64,11 +67,25 @@ public class SSLServer extends Thread {
         SSLServerSocket sslServerSocket = ( SSLServerSocket ) sslServerSocketFactory.createServerSocket(port);
 
         //  Force client authentication
-        sslServerSocket.setNeedClientAuth(true);
+        //  sslServerSocket.setNeedClientAuth(true);
 
         SSLSocket server = (SSLSocket) sslServerSocket.accept();
         log.info("Connection complete: " + server);
         return server;
+    }
+
+    private void fetchAllRecords() throws RemoteException, AlreadyBoundException {
+        ServerRMIHandler serverRMIHandler = new ServerRMIHandler();
+        //  Export remote object to the stub
+        ServerRMI stub = (ServerRMI) UnicastRemoteObject.exportObject(serverRMIHandler, 8010);
+        //  Bind stub in the registry
+        Registry registry = LocateRegistry.getRegistry();
+
+        //  Fetch database records
+        ToyDatabase database = new ToyDatabase();
+        List<String> list = database.showAll();
+        registry.bind(String.valueOf(list), stub);
+        log.info("Fetch all RMI ready");
     }
 
     @SneakyThrows
@@ -79,22 +96,30 @@ public class SSLServer extends Thread {
             server = connect(port);
 
             //  Read object input stream
-            List<ToyInfo> toyDetails;
+            List<String> toyDetails;
             ObjectInputStream objectInputStream = new ObjectInputStream(server.getInputStream());
             Object object = objectInputStream.readObject();
-            toyDetails = (List<ToyInfo>) object;
-            log.info("Server received: " + toyDetails);
+            toyDetails = (List<String>) object;
+            if (!toyDetails.isEmpty()) {
+                log.info("Server received: " + toyDetails);
+                //  run database.createTable() if running H2 for the first time
+                ToyDatabase database = new ToyDatabase();
+                database.save(toyDetails);
 
-            //  Save in database
-            ToyDatabase database = new ToyDatabase();
-            database.creatTable();
-            database.save(toyDetails);
+                //  Send response
+                int response = 200;
+                log.info("Sending response code");
+                OutputStreamWriter outputStreamWriter = new OutputStreamWriter(server.getOutputStream());
+                PrintWriter printWriter = new PrintWriter(outputStreamWriter);
+                printWriter.println(response);
+                printWriter.flush();
+                log.info("Response code sent");
+                server.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             log.error(e.getMessage());
-        } catch (SQLException e) {
-            H2JDBCUtils.printSQLException(e);
         } catch (CertificateException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -112,6 +137,7 @@ public class SSLServer extends Thread {
                 PrintWriter printWriter = new PrintWriter(outputStreamWriter);
                 printWriter.println(500);   //  Internal server error
                 printWriter.flush();
+                server.close();
             } catch (IOException e) {
                 log.error(e.getMessage());
             } catch (CertificateException e) {
@@ -126,31 +152,6 @@ public class SSLServer extends Thread {
                 log.error(e.getMessage());
             }
         }
-
-        //  Send response
-        int response = 200;
-        try {
-            server = connect(port);
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(server.getOutputStream());
-            PrintWriter printWriter = new PrintWriter(outputStreamWriter);
-            printWriter.println(response);
-            printWriter.flush();
-            log.info("Response sent");
-            server.close();
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        } catch (CertificateException e) {
-            log.error(e.getMessage());
-        } catch (NoSuchAlgorithmException e) {
-            log.error(e.getMessage());
-        } catch (UnrecoverableKeyException e) {
-            log.error(e.getMessage());
-        } catch (KeyStoreException e) {
-            log.error(e.getMessage());
-        } catch (KeyManagementException e) {
-            log.error(e.getMessage());
-        }
-
     }
 
 }

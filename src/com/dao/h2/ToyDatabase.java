@@ -20,11 +20,15 @@ public class ToyDatabase {
 
     private static final String SELECT_ALL = "SELECT * FROM ToyInfo;";
 
+    private static final String SELECT_WITH_SPECIFIC_ID = "SELECT * FROM ToyInfo WHERE toyCode=?;";
+
     private static final String INSERT_TOY_INFORMATION = "INSERT INTO ToyInfo" +
             " (toyCode, toyName, description, price, manufacturingDate, batchNo," +
             " companyName, streetAddress, zipCode, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
-    public void creatTable() throws SQLException {
+    private static final String DELETE_TOY_INFORMATION = "DELETE * FROM ToyInfo;";
+
+    public void createTable() {
         log.info("Creating database ToyInfo");
         try (
                  Connection connection = H2JDBCUtils.getConnection();
@@ -37,7 +41,7 @@ public class ToyDatabase {
         }
     }
 
-    public void save(List<ToyInfo> toyInfoList) throws SQLException {
+    public void save(List<String> toyInfoList) {
         log.info("Inserting records");
         try(
                 Connection connection = H2JDBCUtils.getConnection();
@@ -53,22 +57,43 @@ public class ToyDatabase {
         }
     }
 
+    public List<String> showAll() {
+        log.info( "Fetching records" );
+        ResultSet rs;
+        List<String> list = new ArrayList<>();
+        try (
+                Connection connection = H2JDBCUtils.getConnection();
+                Statement statement = connection.createStatement();
+        ) {
+            rs = statement.executeQuery(SELECT_ALL);
+            log.info( "Records fetched" );
+            while (rs.next()) {
+                for (int i = 1; i < 10; i++) {
+                    list.add(rs.getString(i));
+                }
+            }
+
+        } catch (SQLException e) {
+            H2JDBCUtils.printSQLException(e);
+        }
+        return list;
+    }
+
     public List<String> showWithId(String id) {
         log.info("Fetching records");
-        ResultSet rs = null;
+        ResultSet rs;
         List<String> list = null;
         try(
                 Connection connection = H2JDBCUtils.getConnection();
-                PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL);
+                PreparedStatement preparedStatement = connection.prepareStatement(SELECT_WITH_SPECIFIC_ID);
                 ) {
-            //preparedStatement.setString(1, id);
+            preparedStatement.setString(1, id);
             rs = preparedStatement.executeQuery();
             log.info("Records fetched");
             list = new ArrayList<>();
-            int i = 1;
-            while (rs.next()){
+            rs.next();
+            for (int i = 1; i < 10; i++) {
                 list.add(rs.getString(i));
-                i++;
             }
 
         }catch (SQLException e) {
@@ -77,6 +102,16 @@ public class ToyDatabase {
         return list;
     }
 
+    public void deleteAllRecords() {
+        log.info( "Deleting from table toy info" );
+        Statement statement = null;
+        try {
+            statement.executeQuery(DELETE_TOY_INFORMATION);
+            log.info("Table is now empty");
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        }
+    }
 
 
 

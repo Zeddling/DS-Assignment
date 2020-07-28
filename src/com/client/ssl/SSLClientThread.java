@@ -1,47 +1,47 @@
 package com.client.ssl;
 
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.net.ssl.*;
 import java.io.*;
-import java.net.Socket;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
-public class SSLClient extends Thread {
+import com.rmi.ServerRMI;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-    private static int port = 8010;
-    private static String host = "127.0.0.1";
+@Slf4j
+public class SSLClientThread extends Thread {
+
+    private static int port;
+    private static String host;
     private KeyStore clientKeyStore;                    //  KeyStore for storing our public/private key pair
     private KeyStore serverKeyStore;                    //  KeyStore for storing the server's public key
     private SSLContext sslContext;                      //  Used to generate a SocketFactory
     static private final String passphrase = "123456";  // Passphrase for accessing keystore
+    private static final Logger log = LoggerFactory.getLogger(SSLClientThread.class);
     private static SecureRandom secureRandom;           //  A source of secure random numbers
-    private static final Logger log = LoggerFactory.getLogger(SSLClient.class);
+    private List<String> toyDetails;
+    private int statusCode;
 
     //  Constructor
-    public SSLClient ( int port ) {
+    public SSLClientThread(int port, String host, List<String> toyDetails, SecureRandom secureRandom ) {
         this.port = port;
-    }
-
-    public static void main(String[] args) {
-        log.info( "Creating secure random" );
-        secureRandom = new SecureRandom();
-        secureRandom.nextInt();
-        log.info("Secure random created");
-        new Thread( new SSLClient(port) ).start();
+        this.host = host;
+        this.toyDetails = toyDetails;
+        this.secureRandom = secureRandom;
     }
 
     //  Read client's key pair from client.private.
     //  Also read server's public key
     private void setupClientKeyStore() {
-        KeyStore clientKeyStore = null;
         try {
             clientKeyStore = KeyStore.getInstance("JKS");
             clientKeyStore.load(new FileInputStream( "/home/zeddling/Documents/Projects/DS Socket Protocol/src/com/client/ssl/client.private" ), passphrase.toCharArray());
@@ -112,26 +112,10 @@ public class SSLClient extends Thread {
         return sslSocket;
     }
 
-    public List<String> setToyDetails() {
-        List<String> toyDetails = new ArrayList<>();
-        toyDetails.add(0, "RS-7938080");
-        toyDetails.add(1, "Ball");
-        toyDetails.add(2, "Round bouncy object");
-        toyDetails.add(3, "700.00");
-        toyDetails.add(4, "07-01-2020");
-        toyDetails.add(5, "TML-73462787");
-        toyDetails.add(6, "Adidas");
-        toyDetails.add(7, "Tuskys T-Mall");
-        toyDetails.add(8, "0100");
-        toyDetails.add(9, "Has a good design");
-        return toyDetails;
-    }
-
     @SneakyThrows
     @Override
     public void run () {
         SSLSocket client = connect(port, host);
-        List<String> toyDetails = setToyDetails();
 
         //  Send object
         ObjectOutputStream objectOutput;
@@ -149,12 +133,31 @@ public class SSLClient extends Thread {
         try {
             InputStream input = client.getInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(input));
-            log.info("Server says: " + br.readLine());
+            statusCode = Integer.parseInt(br.readLine());
+            log.info("Server says: " + statusCode);
             client.close();
             log.info("Socket connection closed");
         } catch (IOException e) {
             log.error(e.getMessage());
         }
+    }
+
+    public static List<String> getAllRecords() {
+        List<String> list = new ArrayList<>();
+        try {
+            Registry registry = LocateRegistry.getRegistry("127.0.0.1");
+            ServerRMI stub = (ServerRMI) registry.lookup("ServerRMI");
+            list = stub.showAllRecords();
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (NotBoundException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public int getStatusCode() {
+        return statusCode;
     }
 
 }

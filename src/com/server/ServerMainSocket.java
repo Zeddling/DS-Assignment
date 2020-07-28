@@ -1,4 +1,4 @@
-package com.socket;
+package com.server;
 
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;

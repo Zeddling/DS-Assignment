@@ -1,11 +1,12 @@
 package com.dao;
 
+//  May be used for jsp forms
 public class ToyInfo {
     private String toyCode;
     private String toyName;
     private String description;
     private String price;
-    private String manufacturingDate;
+    private String manufactureDate;
     private String batchNo;
     private String companyName;
     private String streetAddress;
@@ -36,11 +37,11 @@ public class ToyInfo {
     public void setPrice(String price) {
         this.price = price;
     }
-    public String getManufacturingDate() {
-        return manufacturingDate;
+    public String getManufactureDate() {
+        return manufactureDate;
     }
-    public void setManufacturingDate(String manufacturingDate) {
-        this.manufacturingDate = manufacturingDate;
+    public void setManufactureDate(String manufactureDate) {
+        this.manufactureDate = manufactureDate;
     }
     public String getBatchNo() {
         return batchNo;
@@ -75,7 +76,7 @@ public class ToyInfo {
     @Override
     public String toString() {
         return "ToyInfo [toyCode=" + toyCode + ", toyName=" + toyName + ", description=" + description + ", price="
-                + price + ", manufacturingDate=" + manufacturingDate + ", batchNo=" + batchNo + ", companyName="
+                + price + ", manufacturingDate=" + manufactureDate + ", batchNo=" + batchNo + ", companyName="
                 + companyName + ", streetAddress=" + streetAddress + ", zipCode=" + zipCode + ", comment=" + comment
                 + "]";
     }

@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -15,7 +17,8 @@ public class ClientSocket {
 
     public static void main(String[] args){
         try {
-            Socket socket = new Socket("127.0.0.1", 8006);
+            SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            SSLSocket client = (SSLSocket) sslSocketFactory.createSocket("127.0.0.1", 8006);
             List<String> toyDetails = new ArrayList<>();
             toyDetails.add(0, "RS-7938080");
             toyDetails.add(1, "Ball");
@@ -28,13 +31,13 @@ public class ClientSocket {
             toyDetails.add(8, "0100");
             toyDetails.add(9, "Has a good design");
 
-            ObjectOutputStream objectOutput = new ObjectOutputStream(socket.getOutputStream());
+            ObjectOutputStream objectOutput = new ObjectOutputStream(client.getOutputStream());
             objectOutput.writeObject(toyDetails);
             objectOutput.flush();
             log.info("Object sent to server");
 
             //	Get response
-            InputStream input = socket.getInputStream();
+            InputStream input = client.getInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(input));
             log.info("Server says: " + br.readLine());
         } catch (IOException e) {

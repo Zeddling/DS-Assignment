@@ -1,22 +1,17 @@
-package com.socket;
+package com.server;
 
 
-import com.dao.ToyInfo;
-import com.dao.h2.H2JDBCUtils;
 import com.dao.h2.ToyDatabase;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.Socket;
-import java.sql.SQLException;
 import java.util.List;
 
 @Slf4j
@@ -35,21 +30,19 @@ public class ServerThread extends Thread {
 
         //  Read message
         try {
-            List<ToyInfo> toyDetails;
+            List<String> toyDetails;
             ObjectInputStream objectInputStream = new ObjectInputStream(sslSocket.getInputStream());
             Object object = objectInputStream.readObject();
             log.info(object.toString());
-            toyDetails = (List<ToyInfo>) object;
+            toyDetails = (List<String>) object;
             log.info("Received: " + toyDetails);
 
             //  Save in database
             ToyDatabase database = new ToyDatabase();
-            database.creatTable();
+            database.createTable();
             database.save(toyDetails);
         } catch (IOException | ClassNotFoundException e) {
             log.error(e.getMessage());
-        } catch (SQLException e){
-            H2JDBCUtils.printSQLException(e);
         }
 
         //  Send response

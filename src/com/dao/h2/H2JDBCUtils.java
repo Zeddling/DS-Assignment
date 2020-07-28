@@ -6,7 +6,7 @@ import java.sql.SQLException;
 
 public class H2JDBCUtils {
 
-    private static String jdbcURL = "jdbc:h2:~/test";
+    private static String jdbcURL = "jdbc:h2:~/ds_one";
     private static String jdbcUsername = "sa";
     private static String jdbcPassword = "";
 
