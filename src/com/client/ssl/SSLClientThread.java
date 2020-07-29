@@ -1,16 +1,26 @@
 package com.client.ssl;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 import javax.net.ssl.*;
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
+import com.aes.CryptoUtils;
+import com.aes.EncryptorAESGCM;
 import com.rmi.ServerRMI;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -25,11 +35,12 @@ public class SSLClientThread extends Thread {
     private KeyStore clientKeyStore;                    //  KeyStore for storing our public/private key pair
     private KeyStore serverKeyStore;                    //  KeyStore for storing the server's public key
     private SSLContext sslContext;                      //  Used to generate a SocketFactory
-    static private final String passphrase = "123456";  // Passphrase for accessing keystore
+    private static final String passphrase = "123456";  // Passphrase for accessing keystore
     private static final Logger log = LoggerFactory.getLogger(SSLClientThread.class);
     private static SecureRandom secureRandom;           //  A source of secure random numbers
     private List<String> toyDetails;
     private int statusCode;
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
     //  Constructor
     public SSLClientThread(int port, String host, List<String> toyDetails, SecureRandom secureRandom ) {
@@ -44,17 +55,9 @@ public class SSLClientThread extends Thread {
     private void setupClientKeyStore() {
         try {
             clientKeyStore = KeyStore.getInstance("JKS");
-            clientKeyStore.load(new FileInputStream( "/home/zeddling/Documents/Projects/DS Socket Protocol/src/com/client/ssl/client.private" ), passphrase.toCharArray());
+            clientKeyStore.load(new FileInputStream( "/path-to-file/client.private" ), passphrase.toCharArray());
             log.info("Client keystore setup complete");
-        } catch (KeyStoreException e) {
-            log.error(e.getMessage());
-        } catch (CertificateException e) {
-            log.error(e.getMessage());
-        } catch (NoSuchAlgorithmException e) {
-            log.error(e.getMessage());
-        } catch (FileNotFoundException e) {
-            log.error(e.getMessage());
-        } catch (IOException e) {
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
             log.error(e.getMessage());
         }
     }
@@ -62,17 +65,9 @@ public class SSLClientThread extends Thread {
     private void setupServerKeystore() {
         try {
             serverKeyStore = KeyStore.getInstance( "JKS" );
-            serverKeyStore.load( new FileInputStream( "/home/zeddling/Documents/Projects/DS Socket Protocol/src/com/client/ssl/server.public" ), "public".toCharArray() );
+            serverKeyStore.load( new FileInputStream( "/path-to-file/server.public" ), "public".toCharArray() );
             log.info("Server keystore complete");
-        } catch (KeyStoreException e) {
-            log.error(e.getMessage());
-        } catch (CertificateException e) {
-            log.error(e.getMessage());
-        } catch (NoSuchAlgorithmException e) {
-            log.error(e.getMessage());
-        } catch (FileNotFoundException e) {
-            log.error(e.getMessage());
-        } catch (IOException e) {
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
             log.error(e.getMessage());
         }
     }
@@ -89,11 +84,7 @@ public class SSLClientThread extends Thread {
             sslContext.init( keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), secureRandom );
         } catch (NoSuchAlgorithmException e) {
             log.error(e.getMessage());
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (UnrecoverableKeyException e) {
-            e.printStackTrace();
-        } catch (KeyManagementException e) {
+        } catch (KeyStoreException | UnrecoverableKeyException | KeyManagementException e) {
             e.printStackTrace();
         }
     }
@@ -122,7 +113,8 @@ public class SSLClientThread extends Thread {
         try {
             log.info("Communication through socket: " + client);
             objectOutput = new ObjectOutputStream(client.getOutputStream());
-            objectOutput.writeObject(toyDetails);
+            log.info("Encrypting list");
+            objectOutput.writeObject(encryptList(ListToString(toyDetails)));
             objectOutput.flush();
             log.info("Object sent successfully");
         } catch (IOException e) {
@@ -142,15 +134,31 @@ public class SSLClientThread extends Thread {
         }
     }
 
+    private static byte[] encryptList( String listString ) {
+        byte[] encryptedText = new byte[0];
+        try {
+            encryptedText = EncryptorAESGCM.encrypt( listString.getBytes(UTF_8), passphrase );
+            log.info("List encryption successful: " + Base64.getEncoder().encodeToString(encryptedText));
+        } catch ( NoSuchAlgorithmException e ) {
+            log.error( e.getMessage() );
+            log.debug( "Check encryption algorithm." );
+        } catch ( InvalidKeySpecException e ) {
+            log.error( e.getMessage() );
+            log.debug( "KeySpec creation might be flawed. Check code logic." );
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+            log.error(e.getMessage());
+        }
+        return encryptedText;
+    }
+
+    //  To be implemented
     public static List<String> getAllRecords() {
         List<String> list = new ArrayList<>();
         try {
             Registry registry = LocateRegistry.getRegistry("127.0.0.1");
             ServerRMI stub = (ServerRMI) registry.lookup("ServerRMI");
             list = stub.showAllRecords();
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        } catch (NotBoundException e) {
+        } catch (RemoteException | NotBoundException e) {
             e.printStackTrace();
         }
         return list;
@@ -158,6 +166,17 @@ public class SSLClientThread extends Thread {
 
     public int getStatusCode() {
         return statusCode;
+    }
+
+    private String ListToString(List<String> list) {
+        StringBuilder stringBuilder = new StringBuilder();
+        String stringSeparator = ",";
+
+        for ( String item : list ) {
+            stringBuilder.append(item);
+            stringBuilder.append(stringSeparator);
+        }
+        return stringBuilder.toString();
     }
 
 }

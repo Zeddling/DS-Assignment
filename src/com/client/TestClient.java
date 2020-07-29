@@ -23,16 +23,16 @@ public class TestClient {
 
     public static List<String> setToyDetails() {
         List<String> toyDetails = new ArrayList<>();
-        toyDetails.add(0, "RS-7938084");
-        toyDetails.add(1, "Computer Mouse");
-        toyDetails.add(2, "Electronic aid for navigating a computer desktop");
-        toyDetails.add(3, "1400.00");
+        toyDetails.add(0, "RS-7938095");
+        toyDetails.add(1, "Plastic Bottle");
+        toyDetails.add(2, "1 Litre translucent plastic bottle");
+        toyDetails.add(3, "300.00");
         toyDetails.add(4, "05-02-2020");
-        toyDetails.add(5, "TML-83067485");
-        toyDetails.add(6, "Tuskys Electronics");
+        toyDetails.add(5, "TML-73863255");
+        toyDetails.add(6, "Dasani");
         toyDetails.add(7, "Tuskys T-Mall");
         toyDetails.add(8, "0100");
-        toyDetails.add(9, "1200 DPI");
+        toyDetails.add(9, "Durable");
         return toyDetails;
     }
 
