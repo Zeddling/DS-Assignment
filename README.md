@@ -17,6 +17,8 @@ Run com.client.TestClient if you don't have javaFX.
     <li>JSSE</li>
     <li>JavaFX</li>
     <li>H2 Database</li>
+    <li>SL4J</li>
+    <li>Lombok</li>
 </ol>
 
 <h5>Future Developments</h5>
