@@ -23,3 +23,5 @@ Run com.client.TestClient if you don't have javaFX.
 
 <h5>Future Developments</h5>
 Remote functionalities to be added later.
+
+<p> Documentation: https://www.overleaf.com/read/hkybhdxfzxvj </p>
